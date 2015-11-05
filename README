@@ -1,0 +1,6 @@
+OAR UI
+======
+
+This is a small Web UI that use the OAR Rest API to submit jobs.
+
+**Warning it is only a prototype, do not use it un production**

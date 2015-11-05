@@ -1,0 +1,139 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>OAR WebUI</title>
+  <meta name="description" content="OAR Web UI">
+  <meta name="author" content="Michael Mercier">
+
+	<link rel="stylesheet" href="anytime.css" />
+	<script src="jquery.js"></script>
+	<script src="anytime.js"></script>
+
+  <!--[if lt IE 9]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+</head>
+
+<body>
+
+	<h3>Kinovis servers reservation form</h3>
+	<form id="job_form" name="Job submission" onsubmit="submit_job();"/>
+		<p>Begin: <input type="text" id="begin_time" size="20"
+  	          value="" />
+		End: <input type="text" id="end_time" size="20"
+  	          value="" />
+  	Duration (H:M:S): <input type="text" id="duration" name="Duration" value=""
+  	readonly="readonly" style="width: 160px; font-weight: bold; border:none;
+  	background: transparent;" />
+		</p>
+    <select id="job_type">
+		<option value="V" selected> V </option>
+   	<option value="R"> R</option>
+   	<option value="C"> C</option>
+    </select>
+		<input type=submit value="Submit Job">
+	</form>
+  <script>
+
+	var oar_api_url = 'http://192.168.35.11:6668/oarapi-priv/';
+  var username = 'oar';
+  var password = 'oar';
+
+  // Disable page reload on submit
+  $('#job_form').submit(function () {
+    return false;
+  });
+
+	function submit_job() {
+		var job_submission = {
+			'resource': '/node=1/walltime=' + $('#duration').val(),
+			'command': $('#job_type').val(),
+		};
+
+		var submission = $.ajax({
+  	  url: oar_api_url + 'jobs',
+  	  type: 'POST',
+      username: 'oar',
+      password: 'oar',
+      contentType: 'application/json',
+  	  data: JSON.stringify(job_submission),
+  	  success: function() { alert('Job submission completed'); },
+      error: function (xhr, ajaxOptions, thrownError) { //Add these parameters to display the required response
+         alert(xhr.status + ":\n" + xhr.responseText);
+      },
+		});
+	}
+
+  function now() {
+    var d = new Date();
+    return d.getFullYear() + "/" + ('0' + (d.getMonth()+1)).slice(-2) +
+      "/" + ('0' + d.getDate()).slice(-2) + " " +
+      d.getHours() + ":" + d.getMinutes();
+  }
+
+	function hour_conv(milli) {
+    var seconds = Math.floor((milli / 1000) % 60);
+    var minutes = Math.floor((milli / (60 * 1000)) % 60);
+    var hours = Math.floor(milli / (60 * 60 * 1000));
+
+    return hours + ":" + ('0' + minutes).slice(-2) + ":" + ('0' + seconds).slice(-2);
+	}
+
+  var date_format = "%Z/%m/%d %H:%i";
+  var conv = new AnyTime.Converter({format: date_format});
+
+  AnyTime.picker( "begin_time",
+    { format: date_format,
+      value: now(),
+			firstDOW: 1,
+    	labelTitle: "Job begining time",
+      earliest: now(),
+    }
+  );
+
+  AnyTime.picker( "end_time",
+    { format: date_format,
+      value: now(),
+			firstDOW: 1,
+    	labelTitle: "Job end time",
+      earliest: now(),
+    }
+  );
+
+  // Set the end time value and the earliest possible value depending on the
+  // begin time
+  $('#begin_time').change(function() {
+    $('#end_time').AnyTime_noPicker();
+    AnyTime.picker( "end_time",
+      { format: "%Z/%m/%d %H:%i",
+		  	firstDOW: 1,
+      	labelTitle: "Job end time",
+        earliest: $('#begin_time').val(),
+      }
+    );
+  });
+
+  // Get duration
+  $('#end_time').change(function() {
+      var begin_date = conv.parse($('#begin_time').val());
+      var end_date = conv.parse($('#end_time').val());
+      var duration = end_date.getTime() - begin_date.getTime();
+      if ( isNaN(duration) ){
+        $('#duration').val("");
+      } else {
+        $('#duration').val(hour_conv(duration));
+      }
+    }
+  );
+
+
+  </script>
+
+
+
+</body>
+</html>
+
